@@ -1,0 +1,9 @@
+{
+	"name": "tesla",
+	"description": "Lolz bot.",
+	"copyright": "Copyright © 2013, Brad Anderson",
+	"authors": ["Brad Anderson"],
+	"dependencies": {
+		"diggler": "~master"
+	}
+}
