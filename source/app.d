@@ -13,13 +13,20 @@ void main()
 
     auto bot = new Bot(conf);
 
-    bot.registerCommands(new EchoCommands);
+    auto note_cmds = new NoteCommands;
+    bot.registerCommands(note_cmds);
 
     auto client = bot.connect("irc://irc.lolutah.com/tesla-testing");
     client.onMessage ~= (user, target, message) {
                             auto titles = scrapeTitles(message);
                             foreach (t; titles)
                                 client.sendf(target, "[ %s ]", t);
+    };
+    client.onMessage ~= (user, _, __) {
+                            note_cmds.dispatchPendingNotes(user.nick.dup);
+    };
+    client.onJoin ~= (user, _) {
+                            note_cmds.dispatchPendingNotes(user.nick.dup);
     };
 
     client.onNickInUse ~= badNick => badNick ~ "_";
