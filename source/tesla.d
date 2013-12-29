@@ -21,7 +21,8 @@ class EchoCommands : CommandSet!EchoCommands
     }
 }
 
-string[] scrapeTitles(in char[] message)
+
+auto scrapeTitles(M)(in M message)
 {
     import std.exception;
     import std.parallelism : paramap = map;
@@ -31,7 +32,7 @@ string[] scrapeTitles(in char[] message)
     static ws_re = ctRegex!(r"(\s{2,}|\n|\t)", "g");
 
     auto utf8 = new EncodingSchemeUtf8;
-    /*auto titles =
+    auto titles =
          matchAll(message, url_re)
         .map!(match => match.captures[0])
         .paramap!((url) => get(url).ifThrown([]))
@@ -39,23 +40,8 @@ string[] scrapeTitles(in char[] message)
                        utf8.sanitize(cast(immutable(ubyte)[])bytes))
         .map!(content => matchFirst(content, title_re))
         .filter!(captures => !captures.empty)
-        .map!(capture => capture[1].idup) // the captured title
-        .map!(title => title.entities_to_uni
-                            .replace(ws_re, " "))
-        .array;
-        */
-
-    auto titles =
-         matchAll(message, url_re)
-        .map!(match => match.captures[0])
-        .paramap!((url) => byChunkAsync(url))
-        .map!(bytes => cast(string)
-                       utf8.sanitize(cast(immutable(ubyte)[])bytes))
-        .map!(content => matchFirst(content, title_re))
-        .filter!(captures => !captures.empty)
-        .map!(capture => capture[1].idup) // the captured title
-        .map!(title => title.entities_to_uni
-                            .replace(ws_re, " "))
+        .map!(capture => capture[1].idup) // dup so GC can collect original
+        .map!(title => title.entitiesToUni.replace(ws_re, " "))
         .array;
 
     return titles;

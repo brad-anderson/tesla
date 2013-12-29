@@ -87,7 +87,7 @@ static this()
 
 
 import std.regex;
-dchar entity_found(Captures!string m)
+dchar entityFound(Caps)(Caps m)
 {
     import std.conv, std.range;
 
@@ -112,8 +112,8 @@ dchar entity_found(Captures!string m)
     return ' ';
 }
 
-string entities_to_uni(string input)
+S entitiesToUni(S)(S input)
 {
     static auto entity_re = ctRegex!(r"&\S+;");
-    return replaceAll!entity_found(input, entity_re);
+    return replaceAll!entityFound(input, entity_re);
 }

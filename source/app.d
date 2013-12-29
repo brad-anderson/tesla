@@ -1,5 +1,7 @@
 import tesla;
 import diggler.bot;
+import std.array;
+import std.algorithm;
 
 void main()
 {
@@ -14,7 +16,11 @@ void main()
     bot.registerCommands(new EchoCommands);
 
     auto client = bot.connect("irc://irc.lolutah.com/tesla-testing");
-    client.onMessage ~= (user, target, message) => client.sendf(target, "%s", scrapeTitles(message));
+    client.onMessage ~= (user, target, message) {
+                            auto titles = scrapeTitles(message);
+                            foreach (t; titles)
+                                client.sendf(target, "[ %s ]", t);
+    };
 
     client.onNickInUse ~= badNick => badNick ~ "_";
 
