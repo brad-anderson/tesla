@@ -3,6 +3,7 @@ import irc.protocol;
 import std.regex;
 import std.net.curl;
 import std.algorithm;
+import std.range;
 import std.array;
 import std.conv;
 import std.stdio;
@@ -73,27 +74,23 @@ class NoteCommands : CommandSet!NoteCommands
 }
 
 
-auto scrapeTitles(M)(in M message)
+string[] scrapeTitles(M)(in M message)
 {
     import std.exception;
     import std.parallelism : paramap = map;
 
-    static url_re = ctRegex!(r"(https?|ftp)://[^\s/$.?#].[^\s]*", "i");
-    static title_re = ctRegex!(r"<title.*?>(.*?)<", "si");
-    static ws_re = ctRegex!(r"(\s{2,}|\n|\t)");
+    static re_url = ctRegex!(r"(https?|ftp)://[^\s/$.?#].[^\s]*", "i");
+    static re_title = ctRegex!(r"<title.*?>(.*?)<", "si");
+    static re_ws = ctRegex!(r"(\s{2,}|\n|\t)");
 
-    auto utf8 = new EncodingSchemeUtf8;
-    auto titles =
-         matchAll(message, url_re)
-        .map!(match => match.captures[0])
-        .paramap!((url) => get(url).ifThrown([]))
-        .map!(bytes => cast(string)
-                       utf8.sanitize(cast(immutable(ubyte)[])bytes))
-        .map!(content => matchFirst(content, title_re))
-        .filter!(captures => !captures.empty)
-        .map!(capture => capture[1].idup) // dup so GC can collect original
-        .map!(title => title.entitiesToUni.replace(ws_re, " "))
-        .array;
-
-    return titles;
+    return matchAll(message, re_url)
+              .map!(      match => match.captures[0] )
+              .map!(        url => byChunk(url, 2048).front ) // just first 2k
+              .map!(    content => matchFirst(cast(char[])content, re_title) )
+              .array // cache to prevent multiple evaluations of preceding
+              .filter!( capture => !capture.empty )
+              .map!(    capture => capture[1].idup.entitiesToUni )
+              .map!(  uni_title => uni_title.replaceAll(re_ws, " ") )
+              .array
+              .ifThrown(string[].init); // [] should work, possible bug
 }
