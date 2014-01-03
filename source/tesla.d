@@ -9,6 +9,9 @@ import std.conv;
 import std.stdio;
 import std.encoding;
 import std.datetime;
+import std.exception;
+import std.string;
+import std.typecons;
 
 import entities;
 
@@ -73,19 +76,15 @@ class NoteCommands : CommandSet!NoteCommands
     }
 }
 
-
 string[] scrapeTitles(M)(in M message)
 {
-    import std.exception;
-    import std.parallelism : paramap = map;
-
     static re_url = ctRegex!(r"(https?|ftp)://[^\s/$.?#].[^\s]*", "i");
     static re_title = ctRegex!(r"<title.*?>(.*?)<", "si");
     static re_ws = ctRegex!(r"(\s{2,}|\n|\t)");
 
     return matchAll(message, re_url)
               .map!(      match => match.captures[0] )
-              .map!(        url => byChunk(url, 2048).front ) // just first 2k
+              .map!(        url => get(url, limitRange("0-4096")).ifThrown([]) ) // just first 4k
               .map!(    content => matchFirst(cast(char[])content, re_title) )
               .array // cache to prevent multiple evaluations of preceding
               .filter!( capture => !capture.empty )
@@ -94,3 +93,13 @@ string[] scrapeTitles(M)(in M message)
               .array
               .ifThrown(string[].init); // [] should work, possible bug
 }
+
+auto limitRange(string range)
+{
+    import etc.c.curl : CurlOption;
+    auto http = HTTP();
+    http.handle.set(CurlOption.range, range);
+
+    return http;
+}
+
