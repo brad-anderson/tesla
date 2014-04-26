@@ -16,20 +16,24 @@ void main()
     auto note_cmds = new NoteCommands;
     bot.registerCommands(note_cmds);
 
-    auto client = bot.connect("irc://irc.lolutah.com/tesla-testing");
-    client.onMessage ~= (user, target, message) {
-                            auto titles = scrapeTitles(message);
-                            foreach (t; titles)
-                                client.sendf(target, "[ %s ]", t);
-    };
-    client.onMessage ~= (user, _, __) {
-                            note_cmds.dispatchPendingNotes(user.nickName.dup);
-    };
-    client.onJoin ~= (user, _) {
-                            note_cmds.dispatchPendingNotes(user.nickName.dup);
-    };
+    auto connections = ["irc://irc.lolutah.com/tesla-testing"];
+    foreach (connection; connections)
+    {
+        auto client = bot.connect(connection);
+        client.onMessage ~= (user, target, message) {
+                                auto titles = scrapeTitles(message);
+                                foreach (t; titles)
+                                    client.sendf(target, "[ %s ]", t);
+        };
+        client.onMessage ~= (user, _, __) {
+                                note_cmds.dispatchPendingNotes(user.nickName.dup);
+        };
+        client.onJoin ~= (user, _) {
+                                note_cmds.dispatchPendingNotes(user.nickName.dup);
+        };
 
-    client.onNickInUse ~= badNick => badNick ~ "_";
+        client.onNickInUse ~= badNick => badNick ~ "_";
+    }
 
     bot.run();
 }
