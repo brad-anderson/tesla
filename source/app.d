@@ -6,7 +6,7 @@ import std.algorithm;
 void main()
 {
     Bot.Configuration conf;
-    conf.nick = "tesla3";
+    conf.nickName = "tesla3";
     conf.userName = "tesla3";
     conf.realName = "Tesla Lolzington";
     conf.commandPrefix = ".";
@@ -23,10 +23,10 @@ void main()
                                 client.sendf(target, "[ %s ]", t);
     };
     client.onMessage ~= (user, _, __) {
-                            note_cmds.dispatchPendingNotes(user.nick.dup);
+                            note_cmds.dispatchPendingNotes(user.nickName.dup);
     };
     client.onJoin ~= (user, _) {
-                            note_cmds.dispatchPendingNotes(user.nick.dup);
+                            note_cmds.dispatchPendingNotes(user.nickName.dup);
     };
 
     client.onNickInUse ~= badNick => badNick ~ "_";

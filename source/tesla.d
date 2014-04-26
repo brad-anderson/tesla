@@ -23,7 +23,7 @@ class EchoCommands : CommandSet!EchoCommands
     @usage("repeat the given text.")
     void echo(in char[] text)
     {
-        reply("%s: %s", user.nick, text);
+        reply("%s: %s", user.nickName, text);
     }
 }
 
@@ -50,15 +50,15 @@ class NoteCommands : CommandSet!NoteCommands
 
         if (!m.hit)
         {
-            reply("%s: syntax is '<nick> <note...>'", user.nick);
+            reply("%s: syntax is '<nick> <note...>'", user.nickName);
             return;
         }
 
         auto addressee = m.captures[1];
         auto note = m.captures[2];
-        notes[addressee] ~= Note(user.nick.dup, note.dup, Clock.currTime());
+        notes[addressee] ~= Note(user.nickName.dup, note.dup, Clock.currTime());
 
-        reply("%s: %s will be notified when they talk or join", user.nick, addressee);
+        reply("%s: %s will be notified when they talk or join", user.nickName, addressee);
     }
 
 
