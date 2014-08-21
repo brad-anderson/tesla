@@ -89,7 +89,7 @@ static this()
 import std.regex;
 dchar entityFound(Caps)(Caps m)
 {
-    import std.conv, std.range;
+    import std.conv, std.range, std.algorithm;
 
     auto entity = m.hit[1..$-1];
 
@@ -98,15 +98,18 @@ dchar entityFound(Caps)(Caps m)
         return *echar;
 
     // Convert hex entities
-    if (entity.front == 'x')
+    if (entity.startsWith("#x"))
     {
-        try return cast(dchar)entity[1..$].to!uint(16);
+        try return cast(dchar)entity[2..$].to!uint(16);
         catch (ConvException) { }
     }
 
     // Convert decimal entities
-    try return cast(dchar)entity.to!uint;
-    catch (ConvException) { }
+    if (entity.startsWith("#"))
+    {
+        try return cast(dchar)entity[1..$].to!uint;
+        catch (ConvException) { }
+    }
 
     // give up (I could keep the original but let's just drop it entirely)
     return ' ';
@@ -114,6 +117,6 @@ dchar entityFound(Caps)(Caps m)
 
 S entitiesToUni(S)(S input)
 {
-    static auto entity_re = ctRegex!(r"&\S+;");
+    static auto entity_re = ctRegex!(r"&\S+?;");
     return replaceAll!entityFound(input, entity_re);
 }
