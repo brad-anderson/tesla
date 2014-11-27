@@ -4,7 +4,8 @@
 	"copyright": "Copyright © 2013, Brad Anderson",
 	"authors": ["Brad Anderson"],
 	"dependencies": {
-		"diggler": "~master"
+		"diggler": "~master",
+		"sdlang-d": ">=0.8.4"
 	},
 	"libs": ["curl"]
 }

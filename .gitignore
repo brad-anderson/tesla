@@ -1,2 +1,8 @@
 *.exe
 *.obj
+tesla
+tesla.conf
+dub.selections.json
+.dub
+*.swp
+

@@ -1,0 +1,7 @@
+nick "tesla"
+user "tesla"
+real "Nikola Tesla"
+
+prefix "."
+
+connection "ircs://irc.kickinrad.us:6999/tesla-testing"

@@ -76,6 +76,20 @@ class NoteCommands : CommandSet!NoteCommands
     }
 }
 
+@category("hail")
+class HailCommands : CommandSet!HailCommands
+{
+    mixin CommandContext!();
+
+    @usage("gets everyones attention")
+    void hail()
+    {
+        reply("%s: %s is being super needy right now",
+              channel.users.map!(a => a.nickName).joiner(", "),
+              user.nickName);
+    }
+}
+
 string[] scrapeTitles(M)(in M message)
 {
     static re_url = ctRegex!(r"(https?|ftp)://[^\s/$.?#].[^\s]*", "i");
