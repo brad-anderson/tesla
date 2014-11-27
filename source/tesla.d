@@ -1,119 +1,78 @@
 import diggler.bot;
 import irc.protocol;
-import std.regex;
-import std.net.curl;
-import std.algorithm;
-import std.range;
-import std.array;
-import std.conv;
+import sdlang;
 import std.stdio;
 import std.encoding;
-import std.datetime;
 import std.exception;
 import std.string;
 import std.typecons;
 
-import entities;
 
-@category("echobot")
-class EchoCommands : CommandSet!EchoCommands
+import note;
+import hail;
+import titlescrape;
+
+class Tesla
 {
-    mixin CommandContext!();
-
-    @usage("repeat the given text.")
-    void echo(in char[] text)
+    this(string config_filename)
     {
-        reply("%s: %s", user.nickName, text);
-    }
-}
+        auto tesla_config = load_config(config_filename);
+        Bot.Configuration conf = tesla_config[0];
+        string[] connections = tesla_config[1];
 
-struct Note
-{
-    string author;
-    string message;
-    SysTime time;
-}
+        bot = new Bot(conf);
 
-@category("notes")
-class NoteCommands : CommandSet!NoteCommands
-{
-    mixin CommandContext!();
+        auto note_cmds = new NoteCommands;
+        bot.registerCommands(note_cmds);
 
-    Note[][string] notes;
+        auto hail_cmds = new HailCommands;
+        bot.registerCommands(hail_cmds);
 
-    @usage("leaves a note for someone")
-    void note(in char[] text)
-    {
-        static note_re = ctRegex!(r"(\S+?)\s+(.+)");
-
-        auto m = matchFirst(text, note_re);
-
-        if (!m.hit)
+        foreach (connection; connections)
         {
-            reply("%s: syntax is '<nick> <note...>'", user.nickName);
-            return;
-        }
+            auto client = bot.connect(connection);
+            client.onMessage ~= (user, target, message) {
+                auto titles = title_scrape(message);
+                foreach (t; titles)
+                    client.sendf(target, "[ %s ]", t);
+            };
+            client.onMessage ~= (user, _, __) {
+                note_cmds.dispatchPendingNotes(user.nickName.dup);
+            };
+            client.onJoin ~= (user, _) {
+                note_cmds.dispatchPendingNotes(user.nickName.dup);
+            };
 
-        auto addressee = m.captures[1];
-        auto note = m.captures[2];
-        notes[addressee] ~= Note(user.nickName.dup, note.dup, Clock.currTime());
-
-        reply("%s: %s will be notified when they talk or join", user.nickName, addressee);
-    }
-
-
-    void dispatchPendingNotes(string user)
-    {
-        if (auto user_notes = user in notes)
-        {
-            foreach(note; *user_notes)
-            {
-                reply("%s: %s left a note for you %s ago:", user, note.author, Clock.currTime() - note.time);
-                reply("%s: <%s> %s", user, note.author, note.message);
-            }
-            notes.remove(user);
+            client.onNickInUse ~= badNick => badNick ~ "_";
         }
     }
+
+    alias bot this;
+
+    Bot bot;
 }
 
-@category("hail")
-class HailCommands : CommandSet!HailCommands
+Tuple!(Bot.Configuration, string[]) load_config(string filename)
 {
-    mixin CommandContext!();
-
-    @usage("gets everyones attention")
-    void hail()
+    try
     {
-        reply("%s: %s is being super needy right now",
-              channel.users.map!(a => a.nickName).joiner(", "),
-              user.nickName);
+        Bot.Configuration config;
+        auto root = parseFile(filename);
+        config.nickName = root.tags["nick"][0].values[0].get!string();
+        config.userName = root.tags["user"][0].values[0].get!string();
+        config.realName = root.tags["real"][0].values[0].get!string();
+        config.commandPrefix = root.tags["prefix"][0].values[0].get!string();
+
+        string[] connections;
+        foreach (connection; root.tags["connection"])
+            connections ~= connection.values[0].get!string();
+
+        return tuple(config, connections);
     }
+    catch (SDLangParseException e)
+    {
+        stderr.writeln(e.msg);
+        throw e;
+    }
+
 }
-
-string[] scrapeTitles(M)(in M message)
-{
-    static re_url = ctRegex!(r"(https?|ftp)://[^\s/$.?#].[^\s]*", "i");
-    static re_title = ctRegex!(r"<title.*?>(.*?)<", "si");
-    static re_ws = ctRegex!(r"(\s{2,}|\n|\t)");
-
-    return matchAll(message, re_url)
-              .map!(      match => match.captures[0] )
-              .map!(        url => get(url, limitRange("0-4096")).ifThrown([]) ) // just first 4k
-              .map!(    content => matchFirst(cast(char[])content, re_title) )
-              .array // cache to prevent multiple evaluations of preceding
-              .filter!( capture => !capture.empty )
-              .map!(    capture => capture[1].idup.entitiesToUni )
-              .map!(  uni_title => uni_title.replaceAll(re_ws, " ") )
-              .array
-              .ifThrown(string[].init); // [] should work, possible bug
-}
-
-auto limitRange(string range)
-{
-    import etc.c.curl : CurlOption;
-    auto http = HTTP();
-    http.handle.set(CurlOption.range, range);
-
-    return http;
-}
-
