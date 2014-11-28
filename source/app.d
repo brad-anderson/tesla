@@ -1,8 +1,12 @@
 import tesla;
+import std.getopt;
 
-void main()
+void main(string[] args)
 {
-    auto bot = new Tesla("tesla.conf");
+    string config_file = "tesla.conf";
+    getopt(args, "config|c", &config_file);
+
+    auto bot = new Tesla(config_file);
     bot.run();
 }
 
