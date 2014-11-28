@@ -36,11 +36,13 @@ class Tesla
                 foreach (t; titles)
                     client.sendf(target, "[ %s ]", t);
             };
-            client.onMessage ~= (user, _, __) {
-                note_cmds.dispatchPendingNotes(user.nickName.dup);
+            client.onMessage ~= (user, target, __) {
+                dispatch_pending_notes(user.nickName.dup, target.dup,
+                        note_cmds, client);
             };
-            client.onJoin ~= (user, _) {
-                note_cmds.dispatchPendingNotes(user.nickName.dup);
+            client.onJoin ~= (user, target) {
+                dispatch_pending_notes(user.nickName.dup, target.dup,
+                        note_cmds, client);
             };
 
             client.onNickInUse ~= badNick => badNick ~ "_";

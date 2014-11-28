@@ -5,7 +5,8 @@
 	"authors": ["Brad Anderson"],
 	"dependencies": {
 		"diggler": "~master",
-		"sdlang-d": ">=0.8.4"
+		"sdlang-d": ">=0.8.4",
+		"msgpack-d": ">=0.9.3"
 	},
 	"libs": ["curl"]
 }
