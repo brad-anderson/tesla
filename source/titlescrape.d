@@ -32,6 +32,9 @@ auto get4k(U)(in U url)
     auto http = HTTP();
     http.handle.set(CurlOption.range, "0-4096");
 
+    // claim to be Chrome so sites don't discriminate (Facebook in particular)
+    http.handle.set(CurlOption.useragent, "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36");
+
     return get(url, http);
 }
 
