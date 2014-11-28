@@ -1,11 +1,9 @@
 import diggler.bot;
 import irc.protocol;
 import sdlang;
-import std.stdio;
-import std.encoding;
-import std.exception;
-import std.string;
-import std.typecons;
+import std.typecons : Tuple, tuple;
+import std.regex : Regex, regex, matchFirst;
+import std.stdio : stderr;
 
 
 import note;
@@ -14,6 +12,9 @@ import titlescrape;
 
 class Tesla
 {
+    Regex!char lolz_regex;
+
+
     this(string config_filename)
     {
         auto tesla_config = load_config(config_filename);
@@ -27,6 +28,8 @@ class Tesla
 
         auto hail_cmds = new HailCommands;
         bot.registerCommands(hail_cmds);
+
+        lolz_regex = regex(r"(\W|^)lol(\W|$)");
 
         foreach (connection; connections)
         {
@@ -43,6 +46,11 @@ class Tesla
             client.onJoin ~= (user, target) {
                 dispatch_pending_notes(user.nickName.dup, target.dup,
                         note_cmds, client);
+            };
+
+            client.onMessage ~= (_, target, message) {
+                if (!matchFirst(message, lolz_regex).empty)
+                    client.send(target, "lolz");
             };
 
             client.onNickInUse ~= badNick => badNick ~ "_";
