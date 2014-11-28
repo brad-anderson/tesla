@@ -8,6 +8,7 @@ import std.stdio : stderr;
 
 import note;
 import hail;
+import dice;
 import titlescrape;
 
 class Tesla
@@ -28,6 +29,9 @@ class Tesla
 
         auto hail_cmds = new HailCommands;
         bot.registerCommands(hail_cmds);
+
+        auto dice_cmds = new DiceCommands;
+        bot.registerCommands(dice_cmds);
 
         lolz_regex = regex(r"(\W|^)lol(\W|$)");
 
